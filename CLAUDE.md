@@ -40,6 +40,8 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
+**Dependencies**: Only requires `playwright>=1.40.0`. The system uses the user's existing Chrome browser installation rather than downloading a separate browser.
+
 ### First-time Authentication
 ```bash
 python login_save.py
@@ -53,11 +55,11 @@ python access_algorithm.py strategy_file.py
 
 ### Browser Management
 ```bash
-python browser_manager.py info    # View browser info
-python browser_manager.py reset   # Reset browser data
-python browser_manager.py backup  # Backup browser data
-python browser_manager.py restore # Restore browser data
-python browser_manager.py clean   # Clean cache
+python browser_manager.py info    # View browser info and data directory
+python browser_manager.py reset   # Reset browser data (requires 'yes' confirmation)
+python browser_manager.py backup  # Backup browser data to timestamped directory
+python browser_manager.py restore # Restore browser data from backup
+python browser_manager.py clean   # Clean cache and temporary files
 ```
 
 ## Key Technical Details
@@ -69,8 +71,11 @@ python browser_manager.py clean   # Clean cache
 
 ### Browser Isolation
 - Uses `joinquant_browser_data/` directory (excluded by .gitignore)
-- Cross-platform Chrome executable detection in `get_user_chrome_executable()`
-- Launches Chrome with specific args for automation compatibility
+- Cross-platform Chrome executable detection in `get_user_chrome_executable()`:
+  - Windows: Checks registry paths and common locations
+  - macOS: Searches `/Applications/` and standard paths
+  - Linux: Looks in standard binary paths and common locations
+- Launches Chrome with specific args for automation compatibility including `--no-sandbox`, `--disable-blink-features=AutomationControlled`
 
 ### Code Injection Strategy
 The `paste_strategy_to_editor()` function uses multiple methods:
@@ -82,9 +87,10 @@ The `paste_strategy_to_editor()` function uses multiple methods:
 ### Error Extraction
 The `read_execution_logs()` function uses JavaScript injection to:
 - Target specific error containers (#log, #daily-logs-tab)
-- Extract Traceback and AttributeError patterns
-- Filter out non-error content from page
-- Return clean error messages only
+- Extract Traceback and AttributeError patterns using regex filtering
+- Filter out non-error content from page using text content analysis
+- Return clean error messages only, stripping execution success messages
+- Uses `page.evaluate()` to execute custom JavaScript in browser context
 
 ## Strategy File Format
 
@@ -94,9 +100,17 @@ Strategy files must be valid Python with JoinQuant API conventions:
 - Use `data[stock]['close']` instead of `data.current(stock, 'price')`
 - Global variable `g` for state management
 
-## File Structure Notes
+## File Structure and Data Handling
 
-- Sensitive data (`auth_state.json`, browser data directories) excluded by .gitignore
-- No build system - direct Python execution
-- Playwright handles browser automation without additional setup
+### Sensitive Data (excluded by .gitignore)
+- `auth_state.json` - Browser cookies and localStorage for authentication
+- `joinquant_browser_data/` - Isolated Chrome profile directory
+- `chrome_debug_data/`, `browser_data/` - Alternative browser data directories
+- `*.log`, `logs/` - Execution logs and temporary files
+
+### Execution Model
+- No build system - direct Python script execution
+- Each script runs independently with full browser lifecycle
+- Browser data persistence allows state preservation between runs
 - Error messages extracted purely from browser DOM, no API calls to JoinQuant
+- All browser instances auto-close after task completion
