@@ -15,7 +15,6 @@
 
 ```bash
 pip install -r requirements.txt
-playwright install chromium
 ```
 
 ## 使用方法
@@ -32,7 +31,6 @@ python login_save.py
 ```bash
 python access_algorithm.py your_strategy.py
 ```
-- 自动使用保存的登录状态
 - 粘贴策略代码到编辑器
 - 点击编译运行
 - 等待20秒后获取错误信息
@@ -61,33 +59,8 @@ python browser_manager.py restore
 
 ## 数据目录
 
-浏览器数据保存在 `joinquant_browser_data/` 目录，包含：
+浏览器数据保存在 `~/.jq-run/joinquant_browser_data/` 目录，包含：
 - 登录状态和Cookie
 - 浏览历史和设置
 - 专用配置文件
 
-## 示例策略文件
-
-```python
-def initialize(context):
-    """初始化函数"""
-    g.stock = '000001.XSHE'
-    print("策略初始化完成")
-
-def handle_data(context, data):
-    """主要交易逻辑"""
-    stock = g.stock
-    # 使用正确的方法获取价格
-    current_price = data[stock]['close']
-    print(f"当前价格: {current_price}")
-
-# 全局变量
-g = type('G', (), {})()
-```
-
-## 注意事项
-
-1. 策略文件必须是有效的Python代码
-2. 使用 `data[stock]['close']` 而不是 `data.current(stock, 'price')`
-3. 错误信息会在执行后自动显示
-4. 浏览器会自动关闭，无需手动操作

@@ -7,9 +7,11 @@ import os
 import shutil
 import sys
 from browser_utils import get_isolated_browser_info, print_isolated_browser_info
+from path_config import get_browser_data_dir, get_browser_backup_dir, ensure_jq_run_dirs, print_jq_run_info, migrate_from_current_dir
 
 def show_browser_info():
     """显示浏览器信息"""
+    print_jq_run_info()
     print_isolated_browser_info()
 
 def reset_browser():
@@ -59,12 +61,14 @@ def backup_browser_data():
         print("🔍 独立浏览器尚未初始化，没有数据可备份")
         return
 
-    backup_dir = os.path.join(os.getcwd(), "joinquant_browser_backup")
-    timestamp = backup_dir + "_" + str(int(os.time()))
+    ensure_jq_run_dirs()
+    backup_base_dir = get_browser_backup_dir()
+    timestamp = str(int(os.time()))
+    backup_dir = os.path.join(backup_base_dir, f"backup_{timestamp}")
 
     try:
-        shutil.copytree(info['data_dir'], timestamp)
-        print(f"✅ 已备份数据到: {timestamp}")
+        shutil.copytree(info['data_dir'], backup_dir)
+        print(f"✅ 已备份数据到: {backup_dir}")
     except Exception as e:
         print(f"❌ 备份失败: {e}")
 
@@ -72,7 +76,8 @@ def restore_browser_data():
     """恢复浏览器数据"""
     import glob
 
-    backup_pattern = os.path.join(os.getcwd(), "joinquant_browser_backup_*")
+    backup_base_dir = get_browser_backup_dir()
+    backup_pattern = os.path.join(backup_base_dir, "backup_*")
     backup_dirs = glob.glob(backup_pattern)
 
     if not backup_dirs:
@@ -139,6 +144,18 @@ def clean_browser_data():
     else:
         print("📝 没有找到可清理的文件")
 
+def migrate_data():
+    """从当前目录迁移数据到 ~/.jq-run"""
+    print("🔄 开始迁移数据到 ~/.jq-run ...")
+    migrated = migrate_from_current_dir()
+    if migrated:
+        print("✅ 数据迁移完成！")
+        print("\n💡 提示：现在可以安全删除当前目录中的旧数据文件")
+        print("   rm -f auth_state.json")
+        print("   rm -rf joinquant_browser_data/")
+    else:
+        print("📝 没有数据需要迁移")
+
 def main():
     print("="*60)
     print("🔒 独立浏览器管理工具")
@@ -154,6 +171,7 @@ def main():
         print("  backup  - 备份浏览器数据")
         print("  restore - 恢复浏览器数据")
         print("  clean   - 清理缓存和临时文件")
+        print("  migrate - 从当前目录迁移数据到 ~/.jq-run")
         print("\n示例:")
         print("  python browser_manager.py info")
         print("  python browser_manager.py reset")
@@ -173,6 +191,8 @@ def main():
         restore_browser_data()
     elif command == "clean":
         clean_browser_data()
+    elif command == "migrate":
+        migrate_data()
     else:
         print(f"❌ 未知命令: {command}")
 

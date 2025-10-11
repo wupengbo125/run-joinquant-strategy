@@ -10,9 +10,7 @@ import os
 import sys
 from playwright.async_api import async_playwright
 from browser_utils import create_isolated_browser, print_isolated_browser_info
-
-# 认证状态文件
-STATE_FILE = "auth_state.json"
+from path_config import get_auth_state_file
 
 async def read_strategy_file(strategy_file):
     """读取策略文件内容"""
@@ -264,7 +262,7 @@ async def read_execution_logs(page):
                 print("✓ 成功提取错误信息")
                 return error_logs.strip()
             else:
-                return "未找到错误信息"
+                return "run successful"
 
         except Exception as e:
             print(f"错误查找失败: {e}")
@@ -277,8 +275,9 @@ async def read_execution_logs(page):
 
 async def access_algorithm_page(strategy_file=None):
     # 检查认证状态文件是否存在
-    if not os.path.exists(STATE_FILE):
-        print(f"错误: 找不到认证状态文件 {STATE_FILE}")
+    auth_file = get_auth_state_file()
+    if not os.path.exists(auth_file):
+        print(f"错误: 找不到认证状态文件 {auth_file}")
         print("请先运行 login_save.py 进行登录并保存认证信息")
         return
 
@@ -297,7 +296,7 @@ async def access_algorithm_page(strategy_file=None):
         print("🔒 使用独立浏览器实例，与日常浏览器完全分离")
 
         # 加载保存的认证状态
-        with open(STATE_FILE, "r", encoding="utf-8") as f:
+        with open(auth_file, "r", encoding="utf-8") as f:
             state = json.load(f)
 
         await context.add_cookies(state.get("cookies", []))
@@ -351,7 +350,7 @@ async def access_algorithm_page(strategy_file=None):
                 execution_logs = await read_execution_logs(page)
 
                 print("\n" + "="*30)
-                print("error message")
+                print("log message")
                 print("="*30)
                 print(execution_logs)
                 print("="*30)

@@ -11,19 +11,34 @@ This is a Python automation tool for running quantitative trading strategies on 
 The project consists of several interconnected components:
 
 ### Core Scripts
-- `login_save.py` - Handles initial authentication and stores login state in `auth_state.json`
+- `login_save.py` - Handles initial authentication and stores login state in `~/.jq-run/auth_state.json`
 - `access_algorithm.py` - Main automation script that runs strategies and extracts error messages
 - `browser_utils.py` - Browser management utilities with Chrome detection and isolated browser creation
-- `browser_manager.py` - CLI tool for managing browser data (backup, restore, reset)
+- `browser_manager.py` - CLI tool for managing browser data (backup, restore, reset, migrate)
+- `path_config.py` - Centralized path configuration for `~/.jq-run` directory management
 
 ### Browser Architecture
-The system creates an isolated browser instance using user's Chrome browser with a dedicated data directory (`joinquant_browser_data/`). This ensures:
+The system creates an isolated browser instance using user's Chrome browser with a dedicated data directory (`~/.jq-run/browser_data/`). This ensures:
 - Separation from user's daily browser
 - Persistent login state across runs
 - Cross-platform Chrome detection (Windows, macOS, Linux)
+- Centralized configuration in user home directory
+
+### Data Storage Organization
+All project data is now centralized in `~/.jq-run/`:
+```
+~/.jq-run/
+├── auth_state.json          # Authentication cookies and state
+├── browser_data/           # Isolated Chrome browser data
+│   ├── Default/           # Chrome profile
+│   ├── Extensions/        # Browser extensions
+│   └── Policy/           # Security policies
+└── backups/              # Browser data backups
+    └── backup_1234567890/ # Timestamped backups
+```
 
 ### Strategy Execution Flow
-1. Load saved authentication state from `auth_state.json`
+1. Load saved authentication state from `~/.jq-run/auth_state.json`
 2. Create isolated browser context using user's Chrome
 3. Navigate to JoinQuant algorithm page
 4. Paste strategy code into Ace Editor using multiple fallback methods
@@ -55,27 +70,30 @@ python access_algorithm.py strategy_file.py
 
 ### Browser Management
 ```bash
-python browser_manager.py info    # View browser info and data directory
+python browser_manager.py info    # View browser info and ~/.jq-run directory structure
 python browser_manager.py reset   # Reset browser data (requires 'yes' confirmation)
-python browser_manager.py backup  # Backup browser data to timestamped directory
-python browser_manager.py restore # Restore browser data from backup
+python browser_manager.py backup  # Backup browser data to ~/.jq-run/backups/
+python browser_manager.py restore # Restore browser data from ~/.jq-run/backups/
 python browser_manager.py clean   # Clean cache and temporary files
+python browser_manager.py migrate # Migrate existing data from current directory to ~/.jq-run
 ```
 
 ## Key Technical Details
 
 ### Authentication State
-- Stored in `auth_state.json` (excluded by .gitignore)
+- Stored in `~/.jq-run/auth_state.json` (excluded by .gitignore)
 - Contains cookies and local storage data
 - Persistent across browser sessions
+- Centrally managed in user home directory
 
 ### Browser Isolation
-- Uses `joinquant_browser_data/` directory (excluded by .gitignore)
+- Uses `~/.jq-run/browser_data/` directory (excluded by .gitignore)
 - Cross-platform Chrome executable detection in `get_user_chrome_executable()`:
   - Windows: Checks registry paths and common locations
   - macOS: Searches `/Applications/` and standard paths
   - Linux: Looks in standard binary paths and common locations
 - Launches Chrome with specific args for automation compatibility including `--no-sandbox`, `--disable-blink-features=AutomationControlled`
+- All data centralized in `~/.jq-run/` for easy backup and management
 
 ### Code Injection Strategy
 The `paste_strategy_to_editor()` function uses multiple methods:
@@ -103,14 +121,23 @@ Strategy files must be valid Python with JoinQuant API conventions:
 ## File Structure and Data Handling
 
 ### Sensitive Data (excluded by .gitignore)
-- `auth_state.json` - Browser cookies and localStorage for authentication
-- `joinquant_browser_data/` - Isolated Chrome profile directory
+- `~/.jq-run/auth_state.json` - Browser cookies and localStorage for authentication
+- `~/.jq-run/browser_data/` - Isolated Chrome profile directory
+- `~/.jq-run/backups/` - Browser data backups
+- `auth_state.json`, `joinquant_browser_data/` - Legacy files (for migration)
 - `chrome_debug_data/`, `browser_data/` - Alternative browser data directories
 - `*.log`, `logs/` - Execution logs and temporary files
+
+### Migration from Legacy Paths
+The project supports automatic migration from old paths:
+- Run `python browser_manager.py migrate` to move existing data to `~/.jq-run/`
+- Old files in project directory are moved to centralized location
+- All functionality now uses the new centralized paths
 
 ### Execution Model
 - No build system - direct Python script execution
 - Each script runs independently with full browser lifecycle
-- Browser data persistence allows state preservation between runs
+- Browser data persistence in `~/.jq-run/` allows state preservation between runs
 - Error messages extracted purely from browser DOM, no API calls to JoinQuant
 - All browser instances auto-close after task completion
+- Centralized configuration makes backup and deployment easier

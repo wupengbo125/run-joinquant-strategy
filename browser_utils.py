@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 from playwright.async_api import async_playwright
+from path_config import get_browser_data_dir, ensure_jq_run_dirs
 
 async def create_isolated_browser(playwright, browser_type="chromium"):
     """
@@ -21,13 +22,9 @@ async def create_isolated_browser(playwright, browser_type="chromium"):
         context: 浏览器上下文实例
     """
     try:
-        # 创建专用的浏览器数据目录
-        persistent_dir = os.path.join(os.getcwd(), "joinquant_browser_data")
-        os.makedirs(persistent_dir, exist_ok=True)
-
-        # 创建子目录
-        for subdir in ["Default", "Extensions", "Policy"]:
-            os.makedirs(os.path.join(persistent_dir, subdir), exist_ok=True)
+        # 确保目录存在并创建专用的浏览器数据目录
+        ensure_jq_run_dirs()
+        persistent_dir = get_browser_data_dir()
 
         print(f"🔧 创建独立浏览器实例，使用您的Chrome浏览器")
         print(f"📁 数据将保存在: {persistent_dir}")
@@ -152,7 +149,7 @@ def get_user_chrome_executable():
 
 def get_isolated_browser_info():
     """获取独立浏览器信息"""
-    persistent_dir = os.path.join(os.getcwd(), "joinquant_browser_data")
+    persistent_dir = get_browser_data_dir()
 
     info = {
         "data_dir": persistent_dir,
@@ -253,12 +250,13 @@ def start_chrome_with_debugging():
 
     # 启动Chrome并开启远程调试
     try:
+        ensure_jq_run_dirs()
         args = [
             chrome_executable,
             "--remote-debugging-port=9222",
             "--no-sandbox",
             "--disable-dev-shm-usage",
-            "--user-data-dir=" + os.path.join(os.getcwd(), "chrome_debug")
+            "--user-data-dir=" + os.path.join(get_browser_data_dir(), "debug")
         ]
 
         subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# jq-run.sh - JoinQuant Strategy Runner
+# Usage: ./jq-run.sh strategy_file.py
+
+# Get the directory where this script is located
+SCRIPT_DIR="/home/pengbo/github/run-joinquant-strategy"
+
+# Check if a strategy file was provided
+if [ $# -eq 0 ]; then
+    echo "Usage: ./jq-run.sh <strategy_file.py>"
+    echo "Example: ./jq-run.sh my_strategy.py"
+    exit 1
+fi
+
+STRATEGY_FILE="$1"
+
+# Check if the strategy file exists
+if [ ! -f "$STRATEGY_FILE" ]; then
+    echo "Error: Strategy file '$STRATEGY_FILE' not found"
+    exit 1
+fi
+
+# Check if the strategy file has .py extension
+if [[ ! "$STRATEGY_FILE" =~ \.py$ ]]; then
+    echo "Error: Strategy file must have .py extension"
+    exit 1
+fi
+
+# Get the absolute path of the strategy file
+if [[ "$STRATEGY_FILE" == /* ]]; then
+    ABS_STRATEGY_FILE="$STRATEGY_FILE"
+else
+    ABS_STRATEGY_FILE="$(pwd)/$STRATEGY_FILE"
+fi
+
+echo "🚀 Running JoinQuant strategy: $STRATEGY_FILE"
+echo "📁 Strategy file: $ABS_STRATEGY_FILE"
+echo "🔧 Using script: $SCRIPT_DIR/access_algorithm.py"
+echo ""
+
+# Run the strategy
+python "$SCRIPT_DIR/access_algorithm.py" "$ABS_STRATEGY_FILE"
+
+# Check exit code
+EXIT_CODE=$?
+if [ $EXIT_CODE -eq 0 ]; then
+    echo ""
+    echo "✅ Strategy execution completed"
+else
+    echo ""
+    echo "❌ Strategy execution failed with exit code: $EXIT_CODE"
+fi
+
+exit $EXIT_CODE

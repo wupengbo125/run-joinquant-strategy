@@ -9,11 +9,15 @@ import os
 import sys
 from playwright.async_api import async_playwright
 from browser_utils import create_isolated_browser, print_isolated_browser_info
-
-# 存储认证状态的文件
-STATE_FILE = "auth_state.json"
+from path_config import get_auth_state_file, ensure_jq_run_dirs, print_jq_run_info
 
 async def save_login_state():
+    # 打印独立浏览器信息和目录配置
+    print_jq_run_info()
+
+    # 确保目录存在
+    ensure_jq_run_dirs()
+
     # 打印独立浏览器信息
     print_isolated_browser_info()
 
@@ -41,10 +45,11 @@ async def save_login_state():
         print("正在保存登录状态...")
         state = await context.storage_state()
 
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
+        auth_file = get_auth_state_file()
+        with open(auth_file, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)
 
-        print(f"登录状态已保存到 {STATE_FILE}")
+        print(f"登录状态已保存到 {auth_file}")
 
 
 if __name__ == "__main__":
